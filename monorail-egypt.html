@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مركز استدامة المونوريل — استصلاح المساحات أسفل الجسر</title>
+  <meta name="description" content="لوحة تفاعلية لتحويل المساحات أسفل خط المونوريل إلى ممرات خضراء ومراكز للتنقل الصغير وأسقف شمسية، مع حاسبة حية لتأثير الكربون والطاقة." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Cairo', 'ui-sans-serif', 'system-ui'],
+            display: ['Cairo', 'sans-serif'],
+          },
+          colors: {
+            canopy: {
+              50:  '#eefbf3',
+              100: '#d6f5e2',
+              200: '#b0e9c9',
+              300: '#7dd6a8',
+              400: '#4abf85',
+              500: '#26a468',
+              600: '#178453',
+              700: '#136944',
+              800: '#125338',
+              900: '#104430',
+              950: '#04261b',
+            },
+            viaduct: {
+              800: '#1c2320',
+              900: '#12171a',
+              950: '#0a0e10',
+            },
+          },
+          animation: {
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+        },
+      },
+    };
+  </script>
+  <script>document.documentElement.classList.add('js');</script>
+  <style>
+    html { scroll-padding-top: 5rem; }
+    body { font-family: 'Cairo', sans-serif; }
+    h1, h2, h3, .display { font-family: 'Cairo', sans-serif; }
+
+    /* Subtle animated grid + glow for hero background */
+    .hero-bg {
+      background:
+        radial-gradient(ellipse 60% 50% at 30% 20%, rgba(38, 164, 104, 0.18), transparent 60%),
+        radial-gradient(ellipse 50% 40% at 80% 80%, rgba(45, 212, 191, 0.10), transparent 60%),
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px),
+        #0a0e10;
+      background-size: auto, auto, 44px 44px, 44px 44px, auto;
+    }
+
+    /* Sliders stay LTR so min is on the left and fill matches the value */
+    input[type='range'] {
+      direction: ltr;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 9999px;
+      background: linear-gradient(to right, #26a468 var(--fill, 50%), #1f2937 var(--fill, 50%));
+      outline: none;
+    }
+    input[type='range']::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px; height: 20px;
+      border-radius: 9999px;
+      background: #4abf85;
+      border: 3px solid #04261b;
+      box-shadow: 0 0 0 2px #26a468, 0 4px 12px rgba(38,164,104,.45);
+      cursor: pointer;
+      transition: transform .15s ease;
+    }
+    input[type='range']::-webkit-slider-thumb:hover { transform: scale(1.15); }
+    input[type='range']::-moz-range-thumb {
+      width: 20px; height: 20px;
+      border-radius: 9999px;
+      background: #4abf85;
+      border: 3px solid #04261b;
+      box-shadow: 0 0 0 2px #26a468;
+      cursor: pointer;
+    }
+
+    .num-anim { transition: color .3s ease; }
+
+    /* ===== Motion ===== */
+    @keyframes rise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+    @keyframes drive { from { transform: translateX(-70px); } to { transform: translateX(70px); } }
+    @keyframes hop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+    @keyframes glow { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+    @keyframes shimmer { 0%, 100% { opacity: .7; } 50% { opacity: .95; } }
+
+    /* Hero entrance (staggered) */
+    #hero .lg\:grid-cols-2 > div:first-child > * { animation: rise .8s cubic-bezier(.22,1,.36,1) both; }
+    #hero .lg\:grid-cols-2 > div:first-child > *:nth-child(2) { animation-delay: .1s; }
+    #hero .lg\:grid-cols-2 > div:first-child > *:nth-child(3) { animation-delay: .2s; }
+    #hero .lg\:grid-cols-2 > div:first-child > *:nth-child(4) { animation-delay: .3s; }
+    #hero .lg\:grid-cols-2 > div:last-child { animation: rise .9s .25s cubic-bezier(.22,1,.36,1) both; }
+
+    /* Ambient motion */
+    #hero .blur-3xl { animation: float 9s ease-in-out infinite; }
+    .train { animation: drive 9s ease-in-out infinite alternate; }
+    .scooters { animation: hop 2.4s ease-in-out infinite; }
+    .lights circle { animation: glow 2.6s ease-in-out infinite; }
+    .lights circle:nth-child(2) { animation-delay: 1.3s; }
+    .shimmer { animation: shimmer 4s ease-in-out infinite; }
+
+    /* Header: gains a shadow once scrolled; nav links get an animated underline */
+    header { transition: background-color .35s ease, box-shadow .35s ease; }
+    header.is-scrolled { background-color: rgba(10, 14, 16, .92); box-shadow: 0 10px 30px -12px rgba(0, 0, 0, .7); }
+    header .hidden a { position: relative; }
+    header .hidden a::after {
+      content: ''; position: absolute; inset-inline: 0; bottom: -6px; height: 2px; border-radius: 2px;
+      background: #4abf85; transform: scaleX(0); transform-origin: right;
+      transition: transform .35s cubic-bezier(.22,1,.36,1);
+    }
+    header .hidden a:hover::after { transform: scaleX(1); }
+
+    /* Press feedback on buttons */
+    a[class*="rounded-xl"]:active, button:active { transform: scale(.97); }
+
+    /* Reveal on scroll (only when JS is running) */
+    html.js .reveal {
+      opacity: 0; translate: 0 28px;
+      transition: opacity .8s cubic-bezier(.22,1,.36,1) var(--d, 0ms), translate .8s cubic-bezier(.22,1,.36,1) var(--d, 0ms);
+    }
+    html.js .reveal.in { opacity: 1; translate: 0 0; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      html.js .reveal { opacity: 1; translate: none; }
+    }
+
+    /* Print: only the report sheet is visible */
+    @media print {
+      body { background: #fff !important; }
+      body > *:not(#reportModal) { display: none !important; }
+      #reportModal { position: static !important; display: block !important; padding: 0 !important; background: #fff !important; }
+      #reportModal .no-print { display: none !important; }
+      #reportSheet { box-shadow: none !important; border: none !important; max-height: none !important; max-width: none !important; border-radius: 0 !important; color: #111 !important; background: #fff !important; }
+      #reportSheet .text-white, #reportSheet .text-canopy-100, #reportSheet .text-canopy-200 { color: #111 !important; }
+      #reportSheet .bg-canopy-950, #reportSheet .bg-viaduct-900 { background: #fff !important; }
+    }
+  </style>
+</head>
+
+<body class="bg-viaduct-950 text-slate-200 antialiased overflow-x-hidden">
+
+  <!-- ============ NAVBAR ============ -->
+  <header class="fixed top-0 inset-x-0 z-40 backdrop-blur-md bg-viaduct-950/80 border-b border-white/5">
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <a href="#hero" class="flex items-center gap-2.5 group">
+        <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-canopy-400 to-canopy-700 flex items-center justify-center shadow-lg shadow-canopy-500/20 group-hover:scale-105 transition-transform">
+          <svg class="w-5 h-5 text-canopy-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+          </svg>
+        </span>
+        <span class="display font-bold text-lg text-white">نقل مستدام | <span class="text-canopy-400">مدينة اذكي </span></span>
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
+        <a href="#interventions" class="hover:text-canopy-300 transition-colors">التدخلات الخضراء</a>
+        <a href="#calculator" class="hover:text-canopy-300 transition-colors">حاسبة الأثر</a>
+        <a href="#methodology" class="hover:text-canopy-300 transition-colors">المنهجية</a>
+      </div>
+      <a href="#calculator" class="px-4 py-2 rounded-lg bg-canopy-500 hover:bg-canopy-400 text-canopy-950 text-sm font-semibold transition-colors shadow-lg shadow-canopy-500/20">
+        شغّل الحاسبة
+      </a>
+    </nav>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <section id="hero" class="hero-bg relative pt-32 pb-20 lg:pt-40 lg:pb-28">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-canopy-500/30 bg-canopy-500/10 text-canopy-300 text-xs font-semibold mb-6">
+            <span class="w-1.5 h-1.5 rounded-full bg-canopy-400 animate-pulse"></span>
+            مشروع تنمية حضرية مستدامة
+          </div>
+          <h1 class="display text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-[1.4]">
+            استعادة المساحة أسفل <span class="text-transparent bg-clip-text bg-gradient-to-r from-canopy-300 to-teal-300">المونوريل</span>
+          </h1>
+          <p class="mt-6 text-lg text-slate-400 leading-relaxed max-w-xl">
+            الممرات أسفل الجسور مساحات منسية في النسيج الحضري. رؤيتنا تحوّلها إلى حدائق طولية
+            ومراكز نقل نظيفة وممرات تعمل بالطاقة الشمسية، لتحويل البنية الرمادية إلى شبكة خضراء حيّة تتنفس.
+          </p>
+          <div class="mt-8 flex flex-wrap gap-4">
+            <a href="#interventions" class="px-6 py-3.5 rounded-xl bg-canopy-500 hover:bg-canopy-400 text-canopy-950 font-semibold transition-all hover:shadow-xl hover:shadow-canopy-500/30">
+              استكشف التدخلات
+            </a>
+            <a href="#calculator" class="px-6 py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white font-semibold transition-colors">
+              احسب الأثر
+            </a>
+          </div>
+        </div>
+
+        <!-- Hero visual: monorail viaduct illustration -->
+        <div class="relative hidden lg:block" aria-hidden="true">
+          <div class="relative rounded-3xl border border-white/10 bg-viaduct-900/60 p-8 shadow-2xl shadow-black/40 overflow-hidden">
+            <div class="absolute -top-16 -end-16 w-56 h-56 rounded-full bg-canopy-500/20 blur-3xl"></div>
+            <svg viewBox="0 0 400 300" class="w-full h-auto">
+              <!-- viaduct deck -->
+              <rect x="20" y="70" width="360" height="14" rx="4" fill="#26343a"/>
+              <rect x="20" y="84" width="360" height="5" rx="2" fill="#1c262b"/>
+              <!-- track -->
+              <rect x="40" y="58" width="320" height="4" rx="2" fill="#3b4a52"/>
+              <!-- monorail train -->
+              <g class="train">
+                <rect x="140" y="26" width="110" height="34" rx="10" fill="#4abf85"/>
+                <rect x="150" y="32" width="24" height="14" rx="3" fill="#0a0e10" opacity=".7"/>
+                <rect x="182" y="32" width="24" height="14" rx="3" fill="#0a0e10" opacity=".7"/>
+                <rect x="214" y="32" width="24" height="14" rx="3" fill="#0a0e10" opacity=".7"/>
+              </g>
+              <!-- columns -->
+              <rect x="60" y="89" width="18" height="170" rx="3" fill="#26343a"/>
+              <rect x="190" y="89" width="18" height="170" rx="3" fill="#26343a"/>
+              <rect x="320" y="89" width="18" height="170" rx="3" fill="#26343a"/>
+              <!-- ground -->
+              <rect x="0" y="258" width="400" height="42" fill="#10161a"/>
+              <!-- solar canopy -->
+              <g>
+                <polygon class="shimmer" points="250,140 330,120 370,140 290,160" fill="#7dd6a8" opacity=".85"/>
+                <line x1="290" y1="160" x2="290" y2="200" stroke="#3b4a52" stroke-width="4"/>
+              </g>
+              <!-- trees & shrubs -->
+              <g>
+                <circle cx="115" cy="235" r="18" fill="#178453"/>
+                <rect x="111" y="245" width="8" height="14" fill="#5b4432"/>
+                <circle cx="160" cy="243" r="11" fill="#26a468"/>
+                <circle cx="240" cy="245" r="9" fill="#2fbf74"/>
+                <circle cx="268" cy="248" r="7" fill="#26a468"/>
+                <circle cx="365" cy="243" r="11" fill="#178453"/>
+                <rect x="362" y="250" width="6" height="9" fill="#5b4432"/>
+              </g>
+              <!-- scooters -->
+              <g class="scooters" stroke="#7dd6a8" stroke-width="3" fill="none" stroke-linecap="round">
+                <circle cx="205" cy="252" r="5"/><circle cx="221" cy="252" r="5"/>
+                <line x1="205" y1="252" x2="209" y2="238"/><line x1="209" y1="238" x2="218" y2="238"/>
+                <line x1="218" y1="238" x2="221" y2="252"/>
+              </g>
+              <!-- pathway lights -->
+              <g class="lights" fill="#d6f5e2">
+                <circle cx="140" cy="212" r="3" opacity=".9"/>
+                <circle cx="300" cy="212" r="3" opacity=".9"/>
+                <line x1="140" y1="215" x2="140" y2="258" stroke="#3b4a52" stroke-width="2"/>
+                <line x1="300" y1="215" x2="300" y2="258" stroke="#3b4a52" stroke-width="2"/>
+              </g>
+            </svg>
+            <p class="mt-4 text-xs text-slate-500 text-center">مقطع تخطيطي: ممر أخضر وسقف شمسي وممر للتنقل الصغير أسفل الجسر.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick stats (sourced; see المصادر at the bottom of the page) -->
+      <div class="mt-16 grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6">
+          <p class="display text-3xl font-bold text-canopy-300"><span class="stat-count num-anim" data-target="100">100</span> كم</p>
+          <p class="mt-1 text-sm text-slate-400">إجمالي طول خطي المونوريل الشرقي والغربي في القاهرة الكبرى [1][2]</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6">
+          <p class="display text-3xl font-bold text-canopy-300"><span class="stat-count num-anim" data-target="35">35</span> محطة</p>
+          <p class="mt-1 text-sm text-slate-400">موزعة على الخطين: 22 محطة في الشرق و13 محطة في الغرب [1][2]</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6">
+          <p class="display text-3xl font-bold text-canopy-300"><span class="stat-count num-anim" data-target="438">438</span> جم</p>
+          <p class="mt-1 text-sm text-slate-400">ثاني أكسيد الكربون لكل كيلوواط ساعة من كهرباء مصر عام 2025 [4]</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6">
+          <p class="display text-3xl font-bold text-canopy-300"><span class="stat-count num-anim" data-target="92" data-suffix="k">92k</span></p>
+          <p class="mt-1 text-sm text-slate-400">كيلوواط ساعة تقديرية سنوياً لكل كيلومتر من الأسقف الشمسية (تقدير تصميمي مبني على المتوسط الشمسي للقاهرة) [5]</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ GREEN INTERVENTIONS ============ -->
+  <section id="interventions" class="py-20 lg:py-28 bg-viaduct-900/40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="max-w-2xl">
+        <p class="text-canopy-400 font-semibold text-sm">التدخلات الخضراء</p>
+        <h2 class="display mt-2 text-3xl sm:text-4xl font-bold text-white leading-[1.4]">ثلاث أفكار، وممر أخضر واحد متصل</h2>
+        <p class="mt-4 text-slate-400 leading-relaxed">صُممت كل ركيزة لتتناسب مع الإيقاع المتكرر لأعمدة الجسر وامتداداته، وهي قابلة للتوسع على طول مسار المونوريل كاملاً.</p>
+      </div>
+
+      <div class="mt-12 grid md:grid-cols-3 gap-6">
+        <!-- Linear Parks -->
+        <article class="group relative rounded-3xl border border-white/10 bg-gradient-to-b from-canopy-950/60 to-viaduct-900 p-8 hover:border-canopy-500/40 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-canopy-900/40">
+          <div class="w-12 h-12 rounded-2xl bg-canopy-500/15 border border-canopy-500/30 flex items-center justify-center">
+            <svg class="w-6 h-6 text-canopy-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+              <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+            </svg>
+          </div>
+          <h3 class="display mt-5 text-xl font-bold text-white">الحدائق الطولية</h3>
+          <p class="mt-1 text-sm text-canopy-400 font-medium">الحزام الأخضر</p>
+          <p class="mt-3 text-sm text-slate-400 leading-relaxed">
+            زراعة نباتية محلية تتحمل الجفاف بين الأعمدة، تُروى بنظام تنقيط ذكي يعتمد على
+            <strong class="text-slate-300">مياه تكثّف أجهزة التكييف</strong> المجمّعة من وحدات المناخ الخاصة بالمونوريل،
+            دون أي هدر لمياه الشرب.
+          </p>
+          <ul class="mt-5 space-y-2 text-sm text-slate-300">
+            <li class="flex gap-2"><span class="text-canopy-400 mt-0.5">&#10003;</span> شجيرات وأشجار ظل محلية قليلة الاستهلاك للمياه</li>
+            <li class="flex gap-2"><span class="text-canopy-400 mt-0.5">&#10003;</span> ري بالتنقيط من مياه التكثيف</li>
+            <li class="flex gap-2"><span class="text-canopy-400 mt-0.5">&#10003;</span> تخفيف جزيرة الحرارة الحضرية بالتظليل والغطاء النباتي</li>
+          </ul>
+        </article>
+
+        <!-- Micro-Mobility Hubs -->
+        <article class="group relative rounded-3xl border border-white/10 bg-gradient-to-b from-canopy-950/60 to-viaduct-900 p-8 hover:border-canopy-500/40 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-canopy-900/40">
+          <div class="w-12 h-12 rounded-2xl bg-canopy-500/15 border border-canopy-500/30 flex items-center justify-center">
+            <svg class="w-6 h-6 text-canopy-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/>
+              <path d="M6 17 9.5 9h5l3 8"/><path d="M9 9h6M12 4h3l1 3"/>
+            </svg>
+          </div>
+          <h3 class="display mt-5 text-xl font-bold text-white">مراكز التنقل الصغير</h3>
+          <p class="mt-1 text-sm text-canopy-400 font-medium">نقل نظيف للمسافة الأخيرة</p>
+          <p class="mt-3 text-sm text-slate-400 leading-relaxed">
+            تحت كل محطة: <strong class="text-slate-300">سكوترات ودراجات كهربائية مرسّاة مع نقاط شحن وحجز عبر التطبيق</strong>،
+            لسد فجوة المسافة الأخيرة بين محطات المونوريل والمنازل.
+          </p>
+          <ul class="mt-5 space-y-2 text-sm text-slate-300">
+            <li class="flex gap-2"><span class="text-canopy-400 mt-0.5">&#10003;</span> محطات رسو تُشحن بالطاقة الشمسية</li>
+            <li class="flex gap-2"><span class="text-canopy-400 mt-0.5">&#10003;</span> فتح الحجز عبر رمز QR أو التطبيق</li>
+            <li class="flex gap-2"><span class="text-canopy-400 mt-0.5">&#10003;</span> صفر انبعاثات عادم في المسافة الأخيرة</li>
+          </ul>
+        </article>
+
+        <!-- Solar Canopies -->
+        <article class="group relative rounded-3xl border border-white/10 bg-gradient-to-b from-canopy-950/60 to-viaduct-900 p-8 hover:border-canopy-500/40 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-canopy-900/40">
+          <div class="w-12 h-12 rounded-2xl bg-canopy-500/15 border border-canopy-500/30 flex items-center justify-center">
+            <svg class="w-6 h-6 text-canopy-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+            </svg>
+          </div>
+          <h3 class="display mt-5 text-xl font-bold text-white">الأسقف الشمسية</h3>
+          <p class="mt-1 text-sm text-canopy-400 font-medium">جلد طاقة ذكي</p>
+          <p class="mt-3 text-sm text-slate-400 leading-relaxed">
+            ألواح كهروضوئية مثبتة على امتداد الجسر <strong class="text-slate-300">تُشغّل إضاءة الممرات أسفل الأعمدة</strong>
+            ومحطات التنقل الصغير، لينتج عنها ممر ذاتي الطاقة بإضاءة LED تستشعر الحركة.
+          </p>
+          <ul class="mt-5 space-y-2 text-sm text-slate-300">
+            <li class="flex gap-2"><span class="text-canopy-400 mt-0.5">&#10003;</span> إضاءة ممرات LED مستقلة عن الشبكة</li>
+            <li class="flex gap-2"><span class="text-canopy-400 mt-0.5">&#10003;</span> الفائض يغذي نقاط شحن المحطات</li>
+            <li class="flex gap-2"><span class="text-canopy-400 mt-0.5">&#10003;</span> مسار مشي مُظلَّل ومريح</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CALCULATOR ============ -->
+  <section id="calculator" class="py-20 lg:py-28 relative">
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-canopy-950/30 to-transparent pointer-events-none"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+      <div class="max-w-2xl">
+        <p class="text-canopy-400 font-semibold text-sm">حاسبة الكربون والطاقة</p>
+        <h2 class="display mt-2 text-3xl sm:text-4xl font-bold text-white leading-[1.4]">قياس أثر الممر</h2>
+        <p class="mt-4 text-slate-400 leading-relaxed">عدّل المدخلات لنمذجة أي مقطع من خط المونوريل. تتحدث النتائج مباشرة، ثم صدّر تقريراً جاهزاً للعرض عن الاستدامة.</p>
+      </div>
+
+      <div class="mt-12 grid lg:grid-cols-5 gap-8 items-start">
+        <!-- Inputs -->
+        <div class="lg:col-span-2 rounded-3xl border border-white/10 bg-viaduct-900/70 p-8 space-y-8">
+          <h3 class="display text-lg font-bold text-white flex items-center gap-2">
+            <svg class="w-5 h-5 text-canopy-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
+            مدخلات المشروع
+          </h3>
+
+          <div>
+            <div class="flex items-baseline justify-between mb-3">
+              <label for="routeLength" class="text-sm font-medium text-slate-300">طول المسار</label>
+              <span class="text-sm font-bold text-canopy-300"><span id="routeLengthVal">5</span> كم</span>
+            </div>
+            <input id="routeLength" type="range" min="0.5" max="50" step="0.5" value="5" class="w-full" />
+            <p class="mt-2 text-xs text-slate-500">إجمالي طول الممر أسفل الجسر الذي يجري استصلاحه.</p>
+          </div>
+
+          <div>
+            <div class="flex items-baseline justify-between mb-3">
+              <label for="shrubs" class="text-sm font-medium text-slate-300">عدد الشجيرات المزروعة</label>
+              <span class="text-sm font-bold text-canopy-300"><span id="shrubsVal">600</span></span>
+            </div>
+            <input id="shrubs" type="range" min="0" max="5000" step="50" value="600" class="w-full" />
+            <p class="mt-2 text-xs text-slate-500">شجيرات محلية تتحمل الجفاف، يغذيها شبكة الري بالتنقيط.</p>
+          </div>
+
+          <div>
+            <div class="flex items-baseline justify-between mb-3">
+              <label for="scooters" class="text-sm font-medium text-slate-300">عدد وحدات السكوتر الكهربائي</label>
+              <span class="text-sm font-bold text-canopy-300"><span id="scootersVal">80</span></span>
+            </div>
+            <input id="scooters" type="range" min="0" max="500" step="10" value="80" class="w-full" />
+            <p class="mt-2 text-xs text-slate-500">سكوترات كهربائية مشتركة مرسّاة عبر مراكز التنقل في الممر.</p>
+          </div>
+
+          <button id="resetCalc" class="w-full py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-semibold text-slate-300 transition-colors">
+            إعادة الضبط إلى القيم التجريبية
+          </button>
+        </div>
+
+        <!-- Outputs -->
+        <div class="lg:col-span-3 space-y-6">
+          <div class="grid sm:grid-cols-3 gap-4">
+            <div class="rounded-3xl border border-canopy-500/25 bg-gradient-to-b from-canopy-900/40 to-viaduct-900 p-6">
+              <div class="flex items-center gap-2 text-canopy-300 text-xs font-semibold">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/></svg>
+                ثاني أكسيد الكربون المُوفَّر / سنوياً
+              </div>
+              <p class="display mt-3 text-3xl font-bold text-white"><span id="outCO2" class="num-anim">224</span></p>
+              <p class="text-xs text-slate-500 mt-1">طن من مكافئ ثاني أكسيد الكربون تم تجنّبه</p>
+            </div>
+            <div class="rounded-3xl border border-canopy-500/25 bg-gradient-to-b from-canopy-900/40 to-viaduct-900 p-6">
+              <div class="flex items-center gap-2 text-canopy-300 text-xs font-semibold">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+                الطاقة الشمسية / سنوياً
+              </div>
+              <p class="display mt-3 text-3xl font-bold text-white"><span id="outSolar" class="num-anim">460,000</span></p>
+              <p class="text-xs text-slate-500 mt-1">كيلوواط ساعة تولّدها الأسقف الشمسية</p>
+            </div>
+            <div class="rounded-3xl border border-canopy-500/25 bg-gradient-to-b from-canopy-900/40 to-viaduct-900 p-6">
+              <div class="flex items-center gap-2 text-canopy-300 text-xs font-semibold">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22v-4M12 2a7 7 0 0 0-7 7c0 2 1 4 2 5l1-3h2l1-2 1 2h2l1 3c1-1 2-3 2-5a7 7 0 0 0-7-7Z"/></svg>
+                الأشجار المكافئة
+              </div>
+              <p class="display mt-3 text-3xl font-bold text-white"><span id="outTrees" class="num-anim">8,946</span></p>
+              <p class="text-xs text-slate-500 mt-1">أشجار ناضجة بامتصاص مكافئ</p>
+            </div>
+          </div>
+
+          <!-- Breakdown -->
+          <div class="rounded-3xl border border-white/10 bg-viaduct-900/70 p-8">
+            <h3 class="display text-lg font-bold text-white mb-6">مصادر التوفير</h3>
+            <div class="space-y-5" id="breakdown">
+              <div>
+                <div class="flex justify-between text-sm mb-1.5">
+                  <span class="text-slate-300">امتصاص الممر الأخضر</span>
+                  <span class="text-slate-400 font-medium" id="bdCorridor">10,000 كجم CO&#8322;</span>
+                </div>
+                <div class="h-2.5 rounded-full bg-white/5 overflow-hidden">
+                  <div id="barCorridor" data-w="4.5" class="h-full rounded-full bg-gradient-to-l from-canopy-600 to-canopy-400 transition-all duration-500" style="width:4.5%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-sm mb-1.5">
+                  <span class="text-slate-300">الشجيرات المزروعة</span>
+                  <span class="text-slate-400 font-medium" id="bdShrubs">3,600 كجم CO&#8322;</span>
+                </div>
+                <div class="h-2.5 rounded-full bg-white/5 overflow-hidden">
+                  <div id="barShrubs" data-w="1.6" class="h-full rounded-full bg-gradient-to-l from-teal-600 to-teal-400 transition-all duration-500" style="width:1.6%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-sm mb-1.5">
+                  <span class="text-slate-300">استبدال رحلات السيارات بالسكوترات</span>
+                  <span class="text-slate-400 font-medium" id="bdScooters">8,560 كجم CO&#8322;</span>
+                </div>
+                <div class="h-2.5 rounded-full bg-white/5 overflow-hidden">
+                  <div id="barScooters" data-w="3.8" class="h-full rounded-full bg-gradient-to-l from-lime-600 to-lime-400 transition-all duration-500" style="width:3.8%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-sm mb-1.5">
+                  <span class="text-slate-300">إزاحة الشبكة بالطاقة الشمسية</span>
+                  <span class="text-slate-400 font-medium" id="bdSolar">201,480 كجم CO&#8322;</span>
+                </div>
+                <div class="h-2.5 rounded-full bg-white/5 overflow-hidden">
+                  <div id="barSolar" data-w="90.1" class="h-full rounded-full bg-gradient-to-l from-emerald-600 to-emerald-400 transition-all duration-500" style="width:90.1%"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p class="text-xs text-slate-500 font-semibold">القيمة الاقتصادية السنوية المقدَّرة</p>
+                <p class="display text-2xl font-bold text-canopy-300">$<span id="outEconomic" class="num-anim">61,909</span> <span class="text-sm text-slate-500 font-normal">/ سنوياً</span></p>
+                <p class="text-[11px] text-slate-600 mt-1">وفورات الطاقة + تقييم أرصدة الكربون</p>
+              </div>
+              <button id="exportReport" class="px-6 py-3.5 rounded-xl bg-canopy-500 hover:bg-canopy-400 text-canopy-950 font-semibold transition-all hover:shadow-xl hover:shadow-canopy-500/30 flex items-center gap-2">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                تصدير تقرير الاستدامة
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ METHODOLOGY ============ -->
+  <section id="methodology" class="py-20 bg-viaduct-900/40 border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="display text-2xl font-bold text-white">المنهجية والافتراضات الحسابية</h2>
+      <div class="mt-8 overflow-x-auto rounded-2xl border border-white/10">
+        <table class="w-full text-sm text-start">
+          <thead class="bg-white/5 text-slate-300 text-xs">
+            <tr>
+              <th class="px-6 py-4 text-start">العامل</th>
+              <th class="px-6 py-4 text-start">القيمة</th>
+              <th class="px-6 py-4 text-start">الأساس</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5 text-slate-400">
+            <tr>
+              <td class="px-6 py-4 text-slate-200 font-medium">امتصاص الممر الأخضر</td>
+              <td class="px-6 py-4">2,000 كجم CO&#8322;/كم/سنة</td>
+              <td class="px-6 py-4">افتراض تصميمي؛ لم نعثر بعد على مصدر منشور يدعمه</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 text-slate-200 font-medium">امتصاص الشجيرات</td>
+              <td class="px-6 py-4">6 كجم CO&#8322;/شجيرة/سنة</td>
+              <td class="px-6 py-4">افتراض تصميمي؛ لم نعثر بعد على مصدر منشور يدعمه</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 text-slate-200 font-medium">الانبعاثات المتجنَّبة للسكوتر</td>
+              <td class="px-6 py-4">107 كجم CO&#8322;/وحدة/سنة</td>
+              <td class="px-6 py-4">1,000 كم سنوياً لكل وحدة (افتراض) × 0.107 كجم/كم لمتوسط السيارة الجديدة في أوروبا 2024 [6]</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 text-slate-200 font-medium">توليد الطاقة الشمسية</td>
+              <td class="px-6 py-4">92,000 kWh/كم/سنة</td>
+              <td class="px-6 py-4">40 kWp لكل كم من الأسقف (افتراض تصميمي) × 2,300 kWh/kWp/سنة لمتوسط القاهرة [5]</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 text-slate-200 font-medium">إزاحة انبعاثات الشبكة</td>
+              <td class="px-6 py-4">0.438 كجم CO&#8322;/kWh</td>
+              <td class="px-6 py-4">كثافة كهرباء مصر عام 2025 [4]</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 text-slate-200 font-medium">الشجرة المكافئة</td>
+              <td class="px-6 py-4">25 كجم CO&#8322;/شجرة/سنة</td>
+              <td class="px-6 py-4">المتوسط الشائع لشجرة ناضجة، والمدى المنشور 10 إلى 40 كجم [7]</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 text-slate-200 font-medium">القيمة الاقتصادية</td>
+              <td class="px-6 py-4">$0.12/kWh + $30/طن CO&#8322;</td>
+              <td class="px-6 py-4">افتراض تقديري؛ لم نعثر بعد على مصدر منشور يدعمه</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ REFERENCES ============ -->
+  <section id="references" class="py-16 border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="display text-2xl font-bold text-white">المصادر</h2>
+      <ol class="mt-8 space-y-4 text-sm text-slate-400 list-decimal ps-5 leading-relaxed">
+        <li>Ahram Online، إطلاق أولى رحلات المونوريل: الخط الشرقي بطول نحو 56.5 كم، والخطان معاً نحو 100 كم و35 محطة. <a href="https://english.ahram.org.eg/NewsContentMulti/567420/Multimedia.aspx" target="_blank" rel="noopener" class="text-canopy-300 hover:underline break-all">english.ahram.org.eg</a></li>
+        <li>Urban Transport Magazine (Erik Buch، 31 أغسطس 2023)، تقدم إنشاء خطي مونوريل القاهرة: الشرقي 57 كم بـ22 محطة، والغربي 42 كم بـ13 محطة. <a href="https://www.urban-transport-magazine.com/en/construction-progress-on-cairos-monorail-lines/" target="_blank" rel="noopener" class="text-canopy-300 hover:underline break-all">urban-transport-magazine.com</a></li>
+        <li>وزارة النقل المصرية (بيان 14 ديسمبر 2023)، الخط الغربي 43.8 كم بـ13 محطة، والمجموع 100 كم و35 محطة، والطاقة الاستيعابية المعلنة 600 ألف راكب يومياً لكل خط (رقم تصميمي معلن). <a href="https://arabcont.com/English/Release-2023-1975" target="_blank" rel="noopener" class="text-canopy-300 hover:underline break-all">arabcont.com</a></li>
+        <li>LowCarbonPower، الكهرباء في مصر عام 2025: كثافة الكربون 438 جم CO&#8322;eq/kWh. <a href="https://lowcarbonpower.org/fr/region/%C3%89gypte" target="_blank" rel="noopener" class="text-canopy-300 hover:underline break-all">lowcarbonpower.org</a></li>
+        <li>ProfileSolar، تحليل الطاقة الشمسية في القاهرة: متوسط الإنتاج اليومي لكل كيلوواط مركّب 8.45 (صيف) و7.53 (ربيع) و5.62 (خريف) و4.01 (شتاء) kWh. متوسط الفصول الأربعة نحو 6.4 kWh/يوم، أي نحو 2,300 kWh/kWp سنوياً (حساب تقريبي بافتراض فصول متساوية). <a href="https://profilesolar.com/locations/Egypt/Cairo/" target="_blank" rel="noopener" class="text-canopy-300 hover:underline break-all">profilesolar.com</a></li>
+        <li>الوكالة الأوروبية للبيئة (EEA)، متوسط انبعاثات ثاني أكسيد الكربون للسيارات الجديدة المسجلة في أوروبا 2024: 106.8 جم/كم، وهو قياس نظري وليس الاستهلاك الفعلي على الطريق. <a href="https://www.eea.europa.eu/en/newsroom/news/average-co2-emissions-from-new-cars-and-new-vans" target="_blank" rel="noopener" class="text-canopy-300 hover:underline break-all">eea.europa.eu</a></li>
+        <li>Ecotree، كم يمتص عمود الشجر من ثاني أكسيد الكربون: المدى المعتاد 10 إلى 40 كجم سنوياً، والمتوسط الشائع نحو 25 كجم. <a href="https://ecotree.green/en/how-much-co2-does-a-tree-absorb" target="_blank" rel="noopener" class="text-canopy-300 hover:underline break-all">ecotree.green</a></li>
+      </ol>
+      <p class="mt-8 text-xs text-slate-600 leading-relaxed">ملاحظة: الأرقام المكتوب بجانبها «افتراض» أو «تقدير تصميمي» ليست نتائج منشورة، وهي مدخلات نموذج المشروع، وتحتاج إلى مراجعة قبل الاعتماد عليها في أي عرض رسمي. الحسابات المعروضة في الحاسبة تعتمد على هذه المدخلات.</p>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="py-10 border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+      <p><span class="display font-bold text-slate-300">مركز استدامة المونوريل</span> — استصلاح المساحات أسفل الجسور، مشروع تخرّج جامعي.</p>
+      <p>&copy; 2026 جميع الحقوق محفوظة &middot; Nour Ayman</p>
+    </div>
+  </footer>
+
+  <!-- ============ REPORT MODAL ============ -->
+  <div id="reportModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+    <div id="reportSheet" class="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-3xl border border-canopy-500/25 bg-viaduct-900 shadow-2xl">
+      <!-- Sheet content is injected by app.js -->
+    </div>
+  </div>
+
+    <script>
+  (function () {
+    'use strict';
+
+    // Formula inputs (match the methodology table on the page)
+    var R = {
+      corridorKg: 2000,  // كجم CO2 / كم / سنة
+      shrubKg: 6,        // كجم / شجيرة / سنة
+      scooterKg: 107,    // كجم / وحدة / سنة
+      kwhPerKm: 92000,   // kWh / كم / سنة
+      gridKg: 0.438,     // كجم CO2 / kWh
+      treeKg: 25,        // كجم / شجرة / سنة
+      priceKwh: 0.12,    // $ / kWh
+      priceTon: 30       // $ / طن
+    };
+    var DEF = { len: 5, shrubs: 600, scooters: 80 };
+    var SUB = '\u2082';
+
+    function $(id) { return document.getElementById(id); }
+    function num(n) { return Math.round(n).toLocaleString('en-US'); }
+
+    function compute(len, shrubs, scooters) {
+      var kwh = len * R.kwhPerKm;
+      var parts = {
+        corridor: len * R.corridorKg,
+        shrubs: shrubs * R.shrubKg,
+        scooters: scooters * R.scooterKg,
+        solar: kwh * R.gridKg
+      };
+      var total = parts.corridor + parts.shrubs + parts.scooters + parts.solar;
+      return {
+        kwh: kwh,
+        parts: parts,
+        total: total,
+        tons: total / 1000,
+        trees: total / R.treeKg,
+        econ: kwh * R.priceKwh + (total / 1000) * R.priceTon
+      };
+    }
+
+    function inputs() {
+      return {
+        len: parseFloat($('routeLength').value),
+        shrubs: parseFloat($('shrubs').value),
+        scooters: parseFloat($('scooters').value)
+      };
+    }
+
+    function setFill(el) {
+      var min = parseFloat(el.min), max = parseFloat(el.max), v = parseFloat(el.value);
+      el.style.setProperty('--fill', ((v - min) / (max - min) * 100) + '%');
+    }
+
+    function paint(barId, labelId, kg, total) {
+      var pct = total > 0 ? kg / total * 100 : 0;
+      var w = pct.toFixed(1);
+      var bar = $(barId);
+      bar.setAttribute('data-w', w);
+      bar.style.width = w + '%';
+      $(labelId).textContent = num(kg) + ' كجم CO' + SUB;
+    }
+
+    function update() {
+      var s = inputs();
+      $('routeLengthVal').textContent = String(s.len);
+      $('shrubsVal').textContent = num(s.shrubs);
+      $('scootersVal').textContent = num(s.scooters);
+      ['routeLength', 'shrubs', 'scooters'].forEach(function (id) { setFill($(id)); });
+
+      var r = compute(s.len, s.shrubs, s.scooters);
+      $('outCO2').textContent = num(r.tons);
+      $('outSolar').textContent = num(r.kwh);
+      $('outTrees').textContent = num(r.trees);
+      $('outEconomic').textContent = num(r.econ);
+
+      paint('barCorridor', 'bdCorridor', r.parts.corridor, r.total);
+      paint('barShrubs', 'bdShrubs', r.parts.shrubs, r.total);
+      paint('barScooters', 'bdScooters', r.parts.scooters, r.total);
+      paint('barSolar', 'bdSolar', r.parts.solar, r.total);
+    }
+
+    ['routeLength', 'shrubs', 'scooters'].forEach(function (id) {
+      $(id).addEventListener('input', update);
+    });
+
+    $('resetCalc').addEventListener('click', function () {
+      $('routeLength').value = DEF.len;
+      $('shrubs').value = DEF.shrubs;
+      $('scooters').value = DEF.scooters;
+      update();
+    });
+
+    // ----- Report modal -----
+    var modal = $('reportModal');
+    var sheet = $('reportSheet');
+
+    function openModal() { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+    function closeModal() { modal.classList.remove('flex'); modal.classList.add('hidden'); }
+
+    function buildReport() {
+      var s = inputs();
+      var r = compute(s.len, s.shrubs, s.scooters);
+      var today = new Date().toLocaleDateString('ar-EG');
+      sheet.innerHTML =
+        '<div class="p-8 sm:p-10">' +
+          '<div class="flex items-start justify-between gap-4">' +
+            '<div>' +
+              '<p class="text-xs font-semibold text-canopy-400">تقرير الاستدامة</p>' +
+              '<h2 id="reportTitle" class="display mt-2 text-2xl font-bold text-white">أثر استصلاح الممر أسفل المونوريل</h2>' +
+              '<p class="mt-2 text-xs text-slate-500">تاريخ التقرير: ' + today + '</p>' +
+            '</div>' +
+            '<button type="button" id="closeReport" aria-label="إغلاق" class="no-print shrink-0 w-9 h-9 rounded-lg border border-white/10 text-slate-400 hover:text-white hover:bg-white/5">&times;</button>' +
+          '</div>' +
+          '<h3 class="display mt-8 text-sm font-bold text-canopy-300">المدخلات</h3>' +
+          '<ul class="mt-3 space-y-1 text-sm text-slate-300">' +
+            '<li>طول المسار: ' + s.len + ' كم</li>' +
+            '<li>عدد الشجيرات: ' + num(s.shrubs) + '</li>' +
+            '<li>وحدات السكوتر: ' + num(s.scooters) + '</li>' +
+          '</ul>' +
+          '<h3 class="display mt-8 text-sm font-bold text-canopy-300">النتائج السنوية</h3>' +
+          '<ul class="mt-3 space-y-1 text-sm text-slate-300">' +
+            '<li>ثاني أكسيد الكربون المُوفَّر: ' + num(r.tons) + ' طن CO' + SUB + ' مكافئ</li>' +
+            '<li>الطاقة الشمسية المولَّدة: ' + num(r.kwh) + ' kWh</li>' +
+            '<li>الأشجار المكافئة: ' + num(r.trees) + '</li>' +
+            '<li>القيمة الاقتصادية التقديرية: $' + num(r.econ) + '</li>' +
+          '</ul>' +
+          '<p class="mt-8 text-xs text-slate-500 leading-relaxed">الأرقام تعتمد على افتراضات تصميمية ومصادر موضحة في قسم المنهجية، وتحتاج إلى مراجعة قبل الاعتماد عليها في عرض رسمي.</p>' +
+          '<div class="no-print mt-8 flex gap-3">' +
+            '<button type="button" id="printReport" class="px-5 py-2.5 rounded-xl bg-canopy-500 hover:bg-canopy-400 text-canopy-950 text-sm font-semibold">طباعة / حفظ PDF</button>' +
+          '</div>' +
+        '</div>';
+
+      $('closeReport').addEventListener('click', closeModal);
+      $('printReport').addEventListener('click', function () { window.print(); });
+    }
+
+    $('exportReport').addEventListener('click', function () {
+      buildReport();
+      openModal();
+    });
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+    });
+
+    // ----- Animated counters in the hero stats -----
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function countUp(el) {
+      if (reduce) return;
+      var target = parseFloat(el.getAttribute('data-target')) || 0;
+      var suffix = el.getAttribute('data-suffix') || '';
+      var t0 = null, dur = 1400;
+      el.textContent = '0' + suffix;
+      function step(ts) {
+        if (t0 === null) t0 = ts;
+        var p = Math.min((ts - t0) / dur, 1);
+        var eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(target * eased) + suffix;
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+    var stats = document.querySelectorAll('.stat-count');
+    if ('IntersectionObserver' in window) {
+      var so = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) { countUp(en.target); so.unobserve(en.target); }
+        });
+      }, { threshold: 0.5 });
+      stats.forEach(function (el) { so.observe(el); });
+    }
+
+    update();
+  })();
+  </script>
+  <script>
+    (function () {
+      // Header gains a shadow once the page is scrolled
+      var header = document.querySelector('header');
+      var onScroll = function () { header.classList.toggle('is-scrolled', window.scrollY > 12); };
+      onScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+
+      // Soft reveal of sections and cards as they enter the viewport
+      var targets = document.querySelectorAll(
+        '#interventions .max-w-2xl > *, #interventions .grid > article,' +
+        '#calculator .max-w-2xl > *, #calculator .grid > div,' +
+        '#methodology h2, #methodology .overflow-x-auto'
+      );
+
+      var io = null;
+      if ('IntersectionObserver' in window) {
+        io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('in');
+            io.unobserve(entry.target);
+          });
+        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      }
+
+      targets.forEach(function (el, i) {
+        el.classList.add('reveal');
+        el.style.setProperty('--d', (i % 4) * 90 + 'ms');
+        // Once the reveal finishes, drop the helper classes so hover transitions work normally
+        el.addEventListener('transitionend', function (e) {
+          if (e.target === el && e.propertyName === 'opacity' && el.classList.contains('in')) {
+            el.classList.remove('reveal', 'in');
+            el.style.removeProperty('--d');
+          }
+        });
+        if (io) { io.observe(el); } else { el.classList.add('in'); }
+      });
+    })();
+  </script>
+</body>
+</html>
